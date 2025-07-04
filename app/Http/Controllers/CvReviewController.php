@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\CvReview;
 use Illuminate\Http\Request;
+use App\Services\CvAiReviewService;
+use Smalot\PdfParser\Parser as PdfParser;
+use PhpOffice\PhpWord\IOFactory as WordIO;
 
 class CvReviewController extends Controller
 {
     public function index()
     {
-        $cv = auth()->user()->cvReview;
+        $cv = CvReview::where('user_id', auth()->id())->latest()->get();
         return view('cv.index', compact('cv'));
     }
 
@@ -20,13 +23,41 @@ class CvReviewController extends Controller
         ]);
 
         $filePath = $request->file('cv')->store('cvs', 'public');
+        $text = $this->extractText($filePath);
+        $aiFeedback = CvAiReviewService::generateFeedback($text);
 
-        $cvReview = CvReview::create([
-            'user_id' => auth()->id(),
-            'cv_file_path' => $filePath,
-            'status' => 'pending',
-        ]);
+            CvReview::create([
+                'user_id' => auth()->id(),
+                'cv_file_path' => $filePath,
+                'feedback' => $aiFeedback,
+                'status' => 'reviewed',
+            ]);
 
-        return redirect()->route('cv.index')->with('success', 'CV uploaded for review.');
+        return redirect()->route('cv.index')->with('success', 'CV re-submitted and reviewed.');
+    }
+
+
+    protected function extractText($path)
+    {
+        $fullPath = storage_path("app/public/{$path}");
+        $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+
+        if ($ext === 'pdf') {
+            $parser = new PdfParser();
+            return $parser->parseFile($fullPath)->getText();
+        }
+
+        if (in_array($ext, ['doc', 'docx'])) {
+            $phpWord = WordIO::load($fullPath);
+            $text = '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    $text .= method_exists($element, 'getText') ? $element->getText() . "\n" : '';
+                }
+            }
+            return $text;
+        }
+
+        return '';
     }
 }
