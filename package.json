@@ -4,7 +4,6 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite",
         "postinstall": "npm run build"
     },
     "devDependencies": {
