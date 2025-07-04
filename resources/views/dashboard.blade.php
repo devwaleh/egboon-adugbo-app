@@ -16,7 +16,7 @@
                     <p class="text-sm text-gray-600">Discover your ideal career path.</p>
                 </a>
 
-                <a href="#" class="bg-indigo-50 p-5 rounded shadow hover:bg-indigo-100">
+                <a href="{{route('cv.index')}}" class="bg-indigo-50 p-5 rounded shadow hover:bg-indigo-100">
                     <h4 class="text-lg font-semibold text-indigo-700">Upload CV</h4>
                     <p class="text-sm text-gray-600">Get expert feedback on your resume.</p>
                 </a>
